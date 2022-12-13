@@ -87,7 +87,8 @@ namespace Resource_Manager
 
             this.stopWatch = new ManagementEventWatcher(new WqlEventQuery("SELECT * FROM Win32_ProcessStopTrace"));
             this.stopWatch.EventArrived += new EventArrivedEventHandler(stopWatch_EventArrived);
-            this.stopWatch.Start();
+            // this does not need to be started because when the program boots up, there will not be intensive progragms
+            // this.stopWatch.Start();
         }
 
         void stopWatch_EventArrived(object sender, EventArrivedEventArgs e)
