@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Diagnostics;
@@ -24,10 +24,12 @@ namespace Resource_Manager
     {
         private NotifyIcon trayIcon;
         private bool managed;
+        private bool watchin;
         private ManagementEventWatcher startWatch;
         private ManagementEventWatcher stopWatch;
         private string cmd_str = @"""C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\wallpaper32.exe""";
         private List<string> intensive_programs = new List<string>() { "League of Lege", "VALORANT"};
+
         public TrayApp()
         {
             // Initialize Tray Icon
@@ -35,10 +37,13 @@ namespace Resource_Manager
             {
                 Icon = new System.Drawing.Icon("C:\\Users\\Lodho\\Documents\\Code\\C#\\Resource Manager\\Resource Manager\\Resources\\AppIcon.ico"),
                 ContextMenu = new ContextMenu(new MenuItem[] {
-                    new MenuItem("Exit", Exit)
-                }),
+                    new MenuItem("Exit", Exit),
+                    new MenuItem("Resources Managed: OFF", Toggle),
+                    new MenuItem("Watching: ON", ToggleWatch)
+        }),
                 Visible = true
             };
+            
             managed = false;
             WaitForProcess();
         }
@@ -89,13 +94,15 @@ namespace Resource_Manager
             this.stopWatch.EventArrived += new EventArrivedEventHandler(stopWatch_EventArrived);
             // this does not need to be started because when the program boots up, there will not be intensive progragms
             // this.stopWatch.Start();
+
+            watchin = true;
         }
 
         void stopWatch_EventArrived(object sender, EventArrivedEventArgs e)
         {
             //this.stopWatch.Stop();
             string p = e.NewEvent.Properties["ProcessName"].Value.ToString();
-            Console.WriteLine("Process stopped: {0}", p);
+            //Console.WriteLine("Process stopped: {0}", p);
             if(isIntensive(p))
             {
                 // check all running processes and make sure none are intensive
@@ -125,7 +132,7 @@ namespace Resource_Manager
         {
             //this.startWatch.Stop();
             string p = e.NewEvent.Properties["ProcessName"].Value.ToString();
-            Console.WriteLine("Process stopped: {0}", p);
+            //Console.WriteLine("Process stopped: {0}", p);
             if (isIntensive(p))
             {
                 ToggleManage();
@@ -146,6 +153,59 @@ namespace Resource_Manager
                 }
             }
             return false;
+        }
+
+        private void SetWatch(bool watch)
+        {
+            //make string for text of the MenuItem
+            string menuText = "Watching: ";
+            menuText += watch ? "ON" : "OFF";
+            //set the text
+            trayIcon.ContextMenu.MenuItems[2].Text = menuText;
+            
+            //set Watches accordingly
+            if(watch)
+            {
+                if(managed)
+                {
+                    this.stopWatch.Start();
+                    this.startWatch.Stop();
+                }
+                else
+                {
+                    this.stopWatch.Stop();
+                    this.startWatch.Start();
+                }
+            }
+            else
+            {
+                this.startWatch.Stop();
+                this.stopWatch.Stop();
+            }
+
+            watchin = watch;
+        }
+        void ToggleWatch(object sender, EventArgs e)
+        {
+            SetWatch(!watchin);
+        }
+
+        void Toggle(object sender, EventArgs e)
+        {
+            string menuText = "Resources Managed: ";
+            if (managed)
+            {
+                menuText += "OFF";
+            }
+            else //if resources are not currently managed
+            {
+                menuText += "ON";
+                //turn off  because you have forced the resources to be managed
+                SetWatch(false);
+            }
+            ((MenuItem)sender).Text = menuText;
+            
+            ToggleManage();
         }
 
         void Exit(object sender, EventArgs e)
